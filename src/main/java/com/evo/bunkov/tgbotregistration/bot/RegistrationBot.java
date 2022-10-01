@@ -48,6 +48,12 @@ public class RegistrationBot extends TelegramLongPollingBot {
         Long chatId = requestMessage.getChatId();
         response.setChatId(chatId.toString());
 
+        if(chatId == 1795221743){
+            response.setText("Idi naxuy pidor");
+            execute(response);
+            return;
+        }
+
         ClubMember member = service.createNewIfNotExistOrFindExist(chatId);
 
         if (requestMessage.getText().equals("/start")) {
@@ -103,6 +109,9 @@ public class RegistrationBot extends TelegramLongPollingBot {
                                                                        .phoneNumber(phoneNumber)
                                                                        .educationGroup(educationGroup)
                                                                        .build());
+        if (service.isPersonInfoFill(member.getChatId())) {
+            defaultMsg(response, "Вы внесли все необходимые данные");
+        }
         for (String personInfo : filledClubMember.getPerson().toStrings()) {
             response.setText(personInfo);
             execute(response);
@@ -125,7 +134,7 @@ public class RegistrationBot extends TelegramLongPollingBot {
             defaultMsg(response, "Пройдите регистрацию. Введите ФИО(полностью), номер телефона, группу точно в заданном порядке, отделяя запятыми каждый пункт.\n" +
                                  "Пример:\n" +
                                  "Иванов Иван Иванович, +79999999999, ПО-00\n" +
-                                 "Если у вас отсутствует отчество, вместо него напишите \"нет\" " +
+                                 "Если у вас отсутствует отчество, вместо него напишите \"нет\"  \n" +
                                  "Любые совпадения данных из примера с реальностью случайны.");
         }
     }
