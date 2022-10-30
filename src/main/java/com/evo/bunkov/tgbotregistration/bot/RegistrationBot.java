@@ -13,6 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.List;
+
 @Component
 public class RegistrationBot extends TelegramLongPollingBot {
 
@@ -24,7 +26,10 @@ public class RegistrationBot extends TelegramLongPollingBot {
 
     private Message requestMessage = new Message();
 
+    private final Long THE_MIKHAILZ_CHATID =1434658083L ;
+
     private final SendMessage response = new SendMessage();
+
 
     public RegistrationBot(@Value("${telegram.bot.username}") String botUsername, @Value("${telegram.bot.token}") String botToken, ClubMemberService service) {
         this.botUsername = botUsername;
@@ -50,18 +55,40 @@ public class RegistrationBot extends TelegramLongPollingBot {
 
         ClubMember member = service.createNewIfNotExistOrFindExist(chatId);
 
+        if (chatId.equals(THE_MIKHAILZ_CHATID) && requestMessage.getText().startsWith("/")) {
+            if (requestMessage.getText().equals("/sendNotificationToUndefinedUsers")) {
+                sendMailsToUndefinedUsers(response);
+            }
+            return;
+        }
         if (requestMessage.getText().equals("/start")) {
-            startMsg(response, member);
-        } else {
-            regMsg(response, member);
+            startMsg(requestMessage, response, member);
+        } else if (requestMessage.getText().startsWith("/reg")) {
+            regMsg(requestMessage, response, member);
+        } else if (requestMessage.getText().startsWith("/educ")){
+            educationCourseMsg(requestMessage, response, member);
         }
 
+    }
+
+    private void sendMailsToUndefinedUsers(SendMessage response) throws TelegramApiException {
+        List<ClubMember> list = service.findUndefinedPersons();
+        for (ClubMember clubMember : list) {
+            System.out.println(clubMember.toString());
+        }
+        for (ClubMember member : list) {
+            response.setText("Пожалуйста, определитесь с направлением обучения в клубе. Иначе вы будете исключены из клуба через 2 недели. " +
+                             "Напишите боту сообщение начав с /educ  названием направления/направлений. Можно несколько, через пробел пожалуйста перечислите. " +
+                             "Их всего 4. frontend, backend c#, backend java, mobile. ");
+            response.setChatId(member.getChatId());
+            execute(response);
+        }
     }
 
     private void regMsg(SendMessage response, ClubMember member) throws TelegramApiException {
         if (service.isPersonInfoFill(member.getChatId())) {
             response.setText("Дальнейшее общение с ботом вам ни к чему. Данный бот нужен только для регистрации и уведомлении вас о собеседовании.\n" +
-                    "Если вы допустили ошибку при написании запрашиваемых данных, напишите @The_Mikhailz");
+                             "Если вы допустили ошибку при написании запрашиваемых данных, напишите @The_Mikhailz");
             execute(response);
             return;
         }
@@ -96,13 +123,13 @@ public class RegistrationBot extends TelegramLongPollingBot {
         String middleName = LFMNames[2].trim();
 
         ClubMember filledClubMember = service.fillPersonInfoById(member.getId(),
-                Person.builder()
-                        .lastName(lastName)
-                        .firstName(firstName)
-                        .middleName(middleName)
-                        .phoneNumber(phoneNumber)
-                        .educationGroup(educationGroup)
-                        .build());
+                                                                 Person.builder()
+                                                                       .lastName(lastName)
+                                                                       .firstName(firstName)
+                                                                       .middleName(middleName)
+                                                                       .phoneNumber(phoneNumber)
+                                                                       .educationGroup(educationGroup)
+                                                                       .build());
         if (service.isPersonInfoFill(member.getChatId())) {
             defaultMsg(response, "Вы внесли все необходимые данные");
         }
@@ -112,25 +139,25 @@ public class RegistrationBot extends TelegramLongPollingBot {
         }
         defaultMsg(response, "Вышеуказанная информация зафиксированна.");
         defaultMsg(response, String.format("Спасибо за прохождение регистрации! \n" +
-                        "%s, Вы приглашены на групповое собеседование которое пройдет в 15:00 среду 12 октября. " +
-                        "Собираемся около 325П",
-                firstName));
+                                           "%s, Вы приглашены на групповое собеседование которое пройдет в 15:00 среду 12 октября. " +
+                                           "Собираемся около 325П",
+                                           firstName));
     }
 
     private void startMsg(SendMessage response, ClubMember member) throws TelegramApiException {
         if (service.isPersonInfoFill(member.getChatId())) {
             defaultMsg(response, "Вы уже проходили регистрацию.\n" +
-                    "Зарегистрированная информация:");
+                                 "Зарегистрированная информация:");
             for (String personInfo : member.getPerson().toStrings()) {
                 response.setText(personInfo);
                 execute(response);
             }
         } else {
             defaultMsg(response, "Пройдите регистрацию. Введите ФИО(полностью), номер телефона, группу точно в заданном порядке, отделяя запятыми каждый пункт.\n" +
-                    "Пример:\n" +
-                    "Иванов Иван Иванович, +79999999999, ПО-00\n" +
-                    "Если у вас отсутствует отчество, вместо него напишите \"нет\"  \n" +
-                    "Любые совпадения данных из примера с реальностью случайны.");
+                                 "Пример:\n" +
+                                 "Иванов Иван Иванович, +79999999999, ПО-00\n" +
+                                 "Если у вас отсутствует отчество, вместо него напишите \"нет\"  \n" +
+                                 "Любые совпадения данных из примера с реальностью случайны.");
         }
     }
 

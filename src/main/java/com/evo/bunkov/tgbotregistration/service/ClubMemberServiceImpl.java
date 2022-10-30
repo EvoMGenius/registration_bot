@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -122,5 +123,10 @@ public class ClubMemberServiceImpl implements ClubMemberService {
     @Override
     public void deleteById(UUID id) {
         repository.deleteById(id);
+    }
+
+    @Override
+    public List<ClubMember> findUndefinedPersons() {
+        return repository.findAllByInfoPermissions("REGISTERED");
     }
 }

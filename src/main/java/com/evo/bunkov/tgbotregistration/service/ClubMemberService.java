@@ -3,6 +3,7 @@ package com.evo.bunkov.tgbotregistration.service;
 import com.evo.bunkov.tgbotregistration.model.ClubMember;
 import com.evo.bunkov.tgbotregistration.model.Person;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface ClubMemberService {
@@ -20,4 +21,6 @@ public interface ClubMemberService {
     ClubMember findByPersonInfo(Person person);
 
     void deleteById(UUID id);
+
+    List<ClubMember> findUndefinedPersons();
 }
