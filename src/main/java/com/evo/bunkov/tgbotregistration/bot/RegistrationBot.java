@@ -14,6 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class RegistrationBot extends TelegramLongPollingBot {
@@ -26,7 +27,7 @@ public class RegistrationBot extends TelegramLongPollingBot {
 
     private Message requestMessage = new Message();
 
-    private final Long THE_MIKHAILZ_CHATID =1434658083L ;
+    private final Long THE_MIKHAILZ_CHATID = 1434658083L;
 
     private final SendMessage response = new SendMessage();
 
@@ -54,21 +55,55 @@ public class RegistrationBot extends TelegramLongPollingBot {
         response.setChatId(chatId.toString());
 
         ClubMember member = service.createNewIfNotExistOrFindExist(chatId);
-
-        if (chatId.equals(THE_MIKHAILZ_CHATID) && requestMessage.getText().startsWith("/")) {
-            if (requestMessage.getText().equals("/sendNotificationToUndefinedUsers")) {
-                sendMailsToUndefinedUsers(response);
-            }
-            return;
+        if (Optional.ofNullable(member.getInfo()).isEmpty()) {
+            defaultMsg(response, "Бот для вас недоступен. Вы не успели на поток регистрации. Следующий поток ожидается весной");
         }
+        if (chatId.equals(THE_MIKHAILZ_CHATID) && requestMessage.getText().startsWith("/")) {
+            adminCommandProvider(requestMessage, response);
+        }
+
         if (requestMessage.getText().equals("/start")) {
             startMsg(requestMessage, response, member);
         } else if (requestMessage.getText().startsWith("/reg")) {
             regMsg(requestMessage, response, member);
-        } else if (requestMessage.getText().startsWith("/educ")){
-            educationCourseMsg(requestMessage, response, member);
+//            defaultMsg(response, "Регистрация до весны не доступна ");
+        } else if (requestMessage.getText().startsWith("/select ")) {
+            String permissions = member.getInfo().getPermissions();
+            if (permissions.equals("REGISTERED")) {
+                courseSelectionMsg(requestMessage, response, member);
+            } else {
+                defaultMsg(response, "Смена направления не доступна. У вас уже выбрано направление: " + permissions);
+            }
+        } else {
+            defaultMsg(response, "Команда не распознана. Список доступных команд:\n" +
+                                 "/reg - регистрация(до весны не доступна)\n" +
+                                 "/select <направления> - указание направления\n" +
+                                 "Пока все ._.");
         }
 
+    }
+
+    private void courseSelectionMsg(Message requestMessage, SendMessage response, ClubMember member) throws TelegramApiException {
+        String messageText = requestMessage.getText().substring("/select ".length());
+        if (messageText.toUpperCase().contains("BACKEND C#")
+            || messageText.toUpperCase().contains("FRONTEND")
+            || messageText.toUpperCase().contains("BACKEND JAVA")
+            || messageText.toUpperCase().contains("MOBILE")) {
+
+            ClubMember clubMember = service.selectPermissions(member.getChatId(), messageText);
+            System.out.println(clubMember);
+            defaultMsg(response, "Информация сохранена. Направления:" + clubMember.getInfo().getPermissions());
+        } else {
+            defaultMsg(response, "Не удалось распознать направление, которые вы указываете. Возможно вы допустили ошибку. " +
+                                 "Убедитесь что вы после написания команды '/select' через пробел корректно написали " +
+                                 "выбранное(ые) вами направление(я). Пример команды. '/select backend java, mobile'");
+        }
+    }
+
+    private void adminCommandProvider(Message requestMessage, SendMessage response) throws TelegramApiException {
+        if (requestMessage.getText().equals("/sendNotificationToUndefinedUsers")) {
+            sendMailsToUndefinedUsers(response);
+        }
     }
 
     private void sendMailsToUndefinedUsers(SendMessage response) throws TelegramApiException {
@@ -77,23 +112,25 @@ public class RegistrationBot extends TelegramLongPollingBot {
             System.out.println(clubMember.toString());
         }
         for (ClubMember member : list) {
-            response.setText("Пожалуйста, определитесь с направлением обучения в клубе. Иначе вы будете исключены из клуба через 2 недели. " +
-                             "Напишите боту сообщение начав с /educ  названием направления/направлений. Можно несколько, через пробел пожалуйста перечислите. " +
-                             "Их всего 4. frontend, backend c#, backend java, mobile. ");
+            response.setText("Укажите ваше направление обучения в клубе. " +
+                             "Напишите боту сообщение начав с /select  название направления/направлений. Можно несколько, через запятую пожалуйста перечислите. " +
+                             "Их всего 4. frontend, backend c#, backend java, mobile. " +
+                             "Пример: /select frontend, backend c#");
             response.setChatId(member.getChatId());
             execute(response);
         }
     }
 
-    private void regMsg(SendMessage response, ClubMember member) throws TelegramApiException {
+    private void regMsg(Message requestMessage, SendMessage response, ClubMember member) throws TelegramApiException {
         if (service.isPersonInfoFill(member.getChatId())) {
-            response.setText("Дальнейшее общение с ботом вам ни к чему. Данный бот нужен только для регистрации и уведомлении вас о собеседовании.\n" +
-                             "Если вы допустили ошибку при написании запрашиваемых данных, напишите @The_Mikhailz");
+//            response.setText("Дальнейшее общение с ботом вам ни к чему. Данный бот нужен только для регистрации и уведомлении вас о собеседовании.\n" +
+//                             "Если вы допустили ошибку при написании запрашиваемых данных, напишите @The_Mikhailz");
+            response.setText("Вы уже внесли информацию для регистрации.");
             execute(response);
             return;
         }
 
-        String text = requestMessage.getText();
+        String text = requestMessage.getText().substring("/reg ".length());
 
         String[] strings = StringUtils.commaDelimitedListToStringArray(text);
         if (strings.length != 3) {
@@ -131,6 +168,7 @@ public class RegistrationBot extends TelegramLongPollingBot {
                                                                        .educationGroup(educationGroup)
                                                                        .build());
         if (service.isPersonInfoFill(member.getChatId())) {
+            service.setPermissionsOnRegistered(member.getChatId());
             defaultMsg(response, "Вы внесли все необходимые данные");
         }
         for (String personInfo : filledClubMember.getPerson().toStrings()) {
@@ -144,7 +182,7 @@ public class RegistrationBot extends TelegramLongPollingBot {
                                            firstName));
     }
 
-    private void startMsg(SendMessage response, ClubMember member) throws TelegramApiException {
+    private void startMsg(Message requestMessage, SendMessage response, ClubMember member) throws TelegramApiException {
         if (service.isPersonInfoFill(member.getChatId())) {
             defaultMsg(response, "Вы уже проходили регистрацию.\n" +
                                  "Зарегистрированная информация:");
@@ -153,11 +191,12 @@ public class RegistrationBot extends TelegramLongPollingBot {
                 execute(response);
             }
         } else {
-            defaultMsg(response, "Пройдите регистрацию. Введите ФИО(полностью), номер телефона, группу точно в заданном порядке, отделяя запятыми каждый пункт.\n" +
-                                 "Пример:\n" +
-                                 "Иванов Иван Иванович, +79999999999, ПО-00\n" +
-                                 "Если у вас отсутствует отчество, вместо него напишите \"нет\"  \n" +
-                                 "Любые совпадения данных из примера с реальностью случайны.");
+            defaultMsg(response, "Регистрация не доступна.");
+//            defaultMsg(response, "Пройдите регистрацию. Введите команду /reg и после укажите ФИО(полностью), номер телефона, группу точно в заданном порядке, отделяя запятыми каждый пункт.\n" +
+//                                 "Пример:\n" +
+//                                 "/reg Иванов Иван Иванович, +79999999999, ПО-00\n" +
+//                                 "Если у вас отсутствует отчество, вместо него напишите \"нет\"  \n" +
+//                                 "Любые совпадения данных из примера с реальностью случайны.");
         }
     }
 

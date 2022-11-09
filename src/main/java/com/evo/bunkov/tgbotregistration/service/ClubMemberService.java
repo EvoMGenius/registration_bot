@@ -23,4 +23,8 @@ public interface ClubMemberService {
     void deleteById(UUID id);
 
     List<ClubMember> findUndefinedPersons();
+
+    ClubMember selectPermissions(Long chatId, String permissions);
+
+    ClubMember setPermissionsOnRegistered(Long chatId);
 }

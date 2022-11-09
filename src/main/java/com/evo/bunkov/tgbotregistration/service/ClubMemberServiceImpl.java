@@ -5,7 +5,6 @@ import com.evo.bunkov.tgbotregistration.model.ClubMember;
 import com.evo.bunkov.tgbotregistration.model.Person;
 import com.evo.bunkov.tgbotregistration.repository.ClubMemberRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,9 +39,6 @@ public class ClubMemberServiceImpl implements ClubMemberService {
             return false;
         }
 
-        member.setInfo(ClubInfo.builder()
-                .permissions("REGISTERED")
-                .build());
         repository.save(member);
         return true;
     }
@@ -88,11 +84,11 @@ public class ClubMemberServiceImpl implements ClubMemberService {
             }
         }
         return repository.save(ClubMember.builder()
-                .id(oldClubMemberInfo.getId())
-                .chatId(oldClubMemberInfo.getChatId())
-                .person(oldPerson)
-                .createTime(oldClubMemberInfo.getCreateTime())
-                .build());
+                                         .id(oldClubMemberInfo.getId())
+                                         .chatId(oldClubMemberInfo.getChatId())
+                                         .person(oldPerson)
+                                         .createTime(oldClubMemberInfo.getCreateTime())
+                                         .build());
     }
 
     @Transactional
@@ -108,9 +104,9 @@ public class ClubMemberServiceImpl implements ClubMemberService {
             LocalDateTime now = LocalDateTime.now();
             System.out.printf("Написал новый пользователь в %s, chatId = %d%n", now, chatId);
             member = repository.save(ClubMember.builder()
-                    .chatId(chatId)
-                    .createTime(now)
-                    .build());
+                                               .chatId(chatId)
+                                               .createTime(now)
+                                               .build());
         }
         return member;
     }
@@ -128,5 +124,21 @@ public class ClubMemberServiceImpl implements ClubMemberService {
     @Override
     public List<ClubMember> findUndefinedPersons() {
         return repository.findAllByInfoPermissions("REGISTERED");
+    }
+
+    @Override
+    public ClubMember selectPermissions(Long chatId, String permissions) {
+        ClubMember member = repository.findByChatId(chatId);
+        member.getInfo().setPermissions(permissions.toUpperCase());
+        return repository.save(member);
+    }
+
+    @Override
+    public ClubMember setPermissionsOnRegistered(Long chatId) {
+        ClubMember member = repository.findByChatId(chatId);
+        member.setInfo(ClubInfo.builder()
+                               .permissions("REGISTERED")
+                               .build());
+        return repository.save(member);
     }
 }
