@@ -1,0 +1,57 @@
+version: '3'
+services:
+  #  employee-service:
+  #    image: apatrios/employee-service:0.0.1
+  #    ports:
+  #      - "8080:8080"
+  #    environment:
+  #      POSTGRES_DATASOURCE_URL: jdbc:postgresql://localhost:5432/postgres?createDatabaseIfNotExists=true
+  #      POSTGRES_DATASOURCE_USERNAME: postgres
+  #      POSTGRES_DATASOURCE_PASSWORD: password
+  #    depends_on:
+  #      - db
+  #    command: bash -c "/apps/wait-for-service.sh db 5432 && /apps/entrypoint.sh"
+  #
+  #  logger-service:
+  #    image: apatrios/logger-service:0.0.1
+  #    ports:
+  #      - "8081:8081"
+  #    environment:
+  #      POSTGRES_DATASOURCE_URL: jdbc:postgresql://localhost:5432/postgres?createDatabaseIfNotExists=true
+  #      POSTGRES_DATASOURCE_USERNAME: postgres
+  #      POSTGRES_DATASOURCE_PASSWORD: password
+  #    depends_on:
+  #      - db
+  #    command: bash -c "/apps/wait-for-service.sh db 5432 && /apps/entrypoint.sh"
+  #
+  #  config-server:
+  #    image: apatrios/config-service:0.0.1
+  #    ports:
+  #      - "8888:8888"
+  #    command: bash -c "/apps/entrypoint.sh"
+  #
+  #  eureka:
+  #    image: apatrios/eureka:0.0.1
+  #    ports:
+  #      - "8761:8761"
+  #    command: bash -c "/apps/entrypoint.sh"
+  #
+
+  db:
+    image: postgres:9.6.12
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+#
+#    image: mysql:8.0.23
+#    environment:
+#      MYSQL_ROOT_PASSWORD: "root"
+#    ports:
+#      - 3306:3306
+#    volumes:
+#      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
